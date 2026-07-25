@@ -1,8 +1,11 @@
 import path from "node:path";
 import {
+  buildUxScoutContext,
   loadConfig,
   handoffModeFromHiveMode,
   readEvidencePacket,
+  readJson,
+  writeJson,
   validateHandoffArtifacts,
   writeHandoffArtifacts,
   type HandoffArtifacts,
@@ -10,7 +13,8 @@ import {
   type HandoffMode,
   type HandoffPacket,
   type HiveBeadDryRunRequest,
-  type HiveHandoffResult
+  type HiveHandoffResult,
+  type FlowAuditReport
 } from "@visual-hive/core";
 
 export interface HandoffCommandOptions {
@@ -60,9 +64,12 @@ export async function runHandoffCommand(options: HandoffCommandOptions = {}): Pr
     throw new Error(`Missing or invalid Evidence Packet at ${evidencePath}. Run "visual-hive evidence" before "visual-hive handoff --dry-run". Details: ${message}`);
   }
   const mode = options.mode ?? handoffModeFromHiveMode(hiveConfig.mode) ?? "dry_run";
-  return writeHandoffArtifacts({
+  const flows = await readOptionalJson<FlowAuditReport>(path.resolve(loaded.rootDir, ".visual-hive/flows.json"), evidencePacket);
+  const uxScoutContext = buildUxScoutContext({ flows, evidence: evidencePacket });
+  const result = await writeHandoffArtifacts({
     rootDir: loaded.rootDir,
     evidencePacket,
+    uxScoutContext,
     evidencePacketPath: path.relative(loaded.rootDir, evidencePath).replaceAll(path.sep, "/"),
     mode,
     labels: options.label?.length ? options.label : hiveConfig.labels,
@@ -78,6 +85,35 @@ export async function runHandoffCommand(options: HandoffCommandOptions = {}): Pr
       }
     }
   });
+  await writeJson(path.join(loaded.rootDir, ".visual-hive/ux-scout-context.json"), uxScoutContext);
+  return result;
+}
+
+async function readOptionalJson<T>(filePath: string, evidence: { project: string }): Promise<FlowAuditReport> {
+  try {
+    return await readJson<T>(filePath) as FlowAuditReport;
+  } catch {
+    return {
+      schemaVersion: 1,
+      project: evidence.project,
+      generatedAt: new Date().toISOString(),
+      summary: {
+        contractCount: 0,
+        flowContractCount: 0,
+        selectedFlowContracts: 0,
+        flowStepCount: 0,
+        navigationSteps: 0,
+        interactionSteps: 0,
+        assertionSteps: 0,
+        failedFlowSteps: 0,
+        contractsWithoutFlow: 0,
+        criticalContractsWithoutFlow: 0,
+        highSeverityFlowGaps: 0
+      },
+      flows: [],
+      recommendations: []
+    };
+  }
 }
 
 export function formatHandoffResult(result: HandoffCommandResult, format: "markdown" | "json" = "markdown"): string {

@@ -336,7 +336,15 @@ export async function runPipelineCommand(options: PipelineCommandOptions = {}): 
   });
   await runStep(context, "handoff", "Hive Handoff Dry Run", async () => {
     await runHandoffCommand({ config: options.config, cwd, mode: "dry_run" });
-    return { artifacts: [catalogArtifact("latest-handoff"), ".visual-hive/hive-issue.md", ".visual-hive/hive-bead-request.json", ".visual-hive/hive-handoff-result.json"] };
+    return {
+      artifacts: [
+        catalogArtifact("latest-handoff"),
+        ".visual-hive/ux-scout-context.json",
+        ".visual-hive/hive-issue.md",
+        ".visual-hive/hive-bead-request.json",
+        ".visual-hive/hive-handoff-result.json"
+      ]
+    };
   });
   await runStep(context, "hive-export", "Hive Native Export", async () => {
     await runHiveExportCommand({ config: options.config, cwd, dryRun: true });

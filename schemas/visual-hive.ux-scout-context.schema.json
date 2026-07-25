@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visual-hive.dev/schemas/visual-hive.ux-scout-context.schema.json",
+  "title": "Visual Hive UX Scout Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "project",
+    "trigger",
+    "visualHiveVerdict",
+    "changedFiles",
+    "affectedFlows",
+    "sourceArtifacts",
+    "guardrails"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "visual-hive.ux-scout-context.v1" },
+    "generatedAt": { "type": "string" },
+    "project": { "type": "string", "minLength": 1 },
+    "trigger": { "const": "affected-flow" },
+    "visualHiveVerdict": {
+      "enum": ["passed", "failed", "warning", "blocked", "inconclusive"]
+    },
+    "changedFiles": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "affectedFlows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "contractId",
+          "targetId",
+          "severity",
+          "selected",
+          "status",
+          "routes",
+          "selectors",
+          "changedFiles",
+          "failedSteps",
+          "evidence"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "contractId": { "type": "string", "minLength": 1 },
+          "targetId": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "selected": { "const": true },
+          "status": { "enum": ["passed", "failed", "created", "skipped", "not_run"] },
+          "routes": { "type": "array", "items": { "type": "string" } },
+          "selectors": { "type": "array", "items": { "type": "string" } },
+          "changedFiles": { "type": "array", "items": { "type": "string" } },
+          "failedSteps": { "type": "array", "items": { "type": "string" } },
+          "evidence": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "sourceArtifacts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "guardrails": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

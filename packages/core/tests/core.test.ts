@@ -85,8 +85,38 @@ const sampleRepository = {
 };
 
 async function expectMatchesSchema(schemaName: string, value: unknown): Promise<void> {
-  const schema = JSON.parse(await readFile(path.join(repoRoot, "schemas", schemaName), "utf8")) as Record<string, unknown>;
+  const schemasDir = path.join(repoRoot, "schemas");
   const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const schema = JSON.parse(await readFile(path.join(schemasDir, schemaName), "utf8")) as Record<string, unknown>;
+  const referencedSchemaNames = new Set<string>();
+  const collectReferences = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(collectReferences);
+      return;
+    }
+    for (const [key, child] of Object.entries(node)) {
+      if (
+        key === "$ref" &&
+        typeof child === "string" &&
+        !child.startsWith("#/")
+      ) {
+        referencedSchemaNames.add(
+          child.startsWith("https://visual-hive.dev/schemas/")
+            ? child.slice("https://visual-hive.dev/schemas/".length)
+            : child
+        );
+      } else {
+        collectReferences(child);
+      }
+    }
+  };
+  collectReferences(schema);
+  for (const referencedSchemaName of referencedSchemaNames) {
+    ajv.addSchema(
+      JSON.parse(await readFile(path.join(schemasDir, referencedSchemaName), "utf8")) as Record<string, unknown>
+    );
+  }
   const validate = ajv.compile(schema);
   const valid = validate(value);
   if (!valid) {
@@ -1021,6 +1051,7 @@ describe("schema catalog", () => {
     expect(schemaNames).toContain("visual-hive.provider-handoff.schema.json");
     expect(schemaNames).toContain("visual-hive.evidence-packet.schema.json");
     expect(schemaNames).toContain("visual-hive.handoff.schema.json");
+    expect(schemaNames).toContain("visual-hive.ux-scout-context.schema.json");
     expect(schemaNames).toContain("visual-hive.agent-packet.schema.json");
     expect(schemaNames).toContain("visual-hive.tool-registry.schema.json");
     expect(schemaNames).toContain("visual-hive.mcp.schema.json");

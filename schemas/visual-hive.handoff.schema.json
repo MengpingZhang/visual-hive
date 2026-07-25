@@ -17,7 +17,8 @@
     "workItems",
     "githubIssue",
     "hiveBeadRequest",
-    "blockedReasons"
+    "blockedReasons",
+    "uxScoutContext"
   ],
   "additionalProperties": false,
   "properties": {
@@ -192,6 +193,9 @@
       "items": {
         "type": "string"
       }
+    },
+    "uxScoutContext": {
+      "$ref": "visual-hive.ux-scout-context.schema.json"
     }
   },
   "$defs": {

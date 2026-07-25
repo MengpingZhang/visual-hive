@@ -4,6 +4,7 @@ import { readJson, writeJson, writeText } from "../utils/files.js";
 import type { EvidenceContribution, EvidencePacket } from "../evidence/types.js";
 import type { BuildHandoffOptions, HandoffArtifacts, HandoffMode, HandoffPacket, HandoffPriority, HandoffWorkItem, HiveBeadDryRunRequest, HiveHandoffResult } from "./types.js";
 import { contributionKey } from "./types.js";
+import type { UxScoutContext } from "../ux/types.js";
 
 const DEFAULT_LABELS = ["visual-hive", "hive/quality", "ai-ready"];
 const DEFAULT_AGENT = "quality";
@@ -35,6 +36,7 @@ export function buildHandoffArtifacts(options: BuildHandoffOptions): HandoffArti
   const beadTarget = beadTargetFor(options, mode);
   const blockedReasons = blockedReasonsFor(options.evidencePacket, mode, beadTarget);
   const workItems = buildWorkItems(options.evidencePacket);
+  const uxScoutContext = options.uxScoutContext ?? emptyUxScoutContext(options.evidencePacket);
   const status = blockedReasons.length ? "blocked" : "ready";
   const issueTitle = issueTitleFor(options.evidencePacket);
   const handoff: HandoffPacket = sanitizeValue({
@@ -55,6 +57,7 @@ export function buildHandoffArtifacts(options: BuildHandoffOptions): HandoffArti
       requiresHumanApprovalFor: HUMAN_APPROVAL
     },
     workItems,
+    uxScoutContext,
     githubIssue: {
       title: issueTitle,
       labels,
@@ -168,6 +171,24 @@ export function renderHiveIssueBody(handoff: HandoffPacket, evidence: EvidencePa
     `- Dedupe fingerprint: ${handoff.githubIssue.dedupeSignature}`,
     `- Labels: ${handoff.labels.join(", ")}`,
     "",
+    "## UX Scout Context",
+    "",
+    `- Trigger: ${handoff.uxScoutContext.trigger}`,
+    `- Visual Hive verdict: ${handoff.uxScoutContext.visualHiveVerdict}`,
+    `- Changed files: ${handoff.uxScoutContext.changedFiles.join(", ") || "none recorded"}`,
+    `- Affected flows: ${handoff.uxScoutContext.affectedFlows.map((flow) => flow.id).join(", ") || "none"}`,
+    "",
+    "UX Scout must review only the affected flows in this section. Visual Hive remains the deterministic verdict authority.",
+    ...handoff.uxScoutContext.affectedFlows.flatMap((flow) => [
+      "",
+      `### ${flow.id}`,
+      `- Route(s): ${flow.routes.join(", ") || "not recorded"}`,
+      `- Selector(s): ${flow.selectors.join(", ") || "not recorded"}`,
+      `- Status: ${flow.status}`,
+      `- Failed steps: ${flow.failedSteps.join("; ") || "none"}`,
+      `- Evidence: ${flow.evidence.join(", ")}`
+    ]),
+    "",
     "## Failing Contracts",
     "",
     ...(failedContracts.length ? failedContracts : ["- No failing deterministic contracts in the latest Evidence Packet."]),
@@ -228,6 +249,24 @@ export function renderHiveIssueBody(handoff: HandoffPacket, evidence: EvidencePa
   ];
   if (handoff.blockedReasons.length) lines.splice(15, 0, `- Blocked reasons: ${handoff.blockedReasons.join("; ")}`);
   return `${sanitizeArtifactPathsForMarkdown(rootDir, lines.join("\n"))}\n`;
+}
+
+function emptyUxScoutContext(evidence: EvidencePacket): UxScoutContext {
+  return {
+    schemaVersion: "visual-hive.ux-scout-context.v1",
+    generatedAt: new Date().toISOString(),
+    project: evidence.project,
+    trigger: "affected-flow",
+    visualHiveVerdict: evidence.verdictSummary.visualHiveVerdict,
+    changedFiles: evidence.plan?.effectiveChangedFiles ?? evidence.plan?.changedFiles ?? [],
+    affectedFlows: [],
+    sourceArtifacts: [".visual-hive/flows.json", ".visual-hive/evidence-packet.json", ".visual-hive/handoff.json"],
+    guardrails: [
+      "UX Scout reviews only affectedFlows in this context.",
+      "Visual Hive remains the deterministic verdict authority.",
+      "UX Scout is advisory-only and must not modify baselines, thresholds, or source code."
+    ]
+  };
 }
 
 function failedContractLines(evidence: EvidencePacket): string[] {

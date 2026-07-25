@@ -1,4 +1,5 @@
 import type { EvidenceContribution, EvidencePacket, VisualHiveVerdict } from "../evidence/types.js";
+import type { UxScoutContext } from "../ux/types.js";
 
 export type HandoffMode = "dry_run" | "github_issue" | "bead_api";
 export type HandoffStatus = "ready" | "blocked";
@@ -40,6 +41,7 @@ export interface HandoffPacket {
     requiresHumanApprovalFor: string[];
   };
   workItems: HandoffWorkItem[];
+  uxScoutContext: UxScoutContext;
   githubIssue: {
     title: string;
     labels: string[];
@@ -109,6 +111,7 @@ export interface HiveHandoffResult {
 
 export interface BuildHandoffOptions {
   evidencePacket: EvidencePacket;
+  uxScoutContext?: UxScoutContext;
   evidencePacketPath: string;
   rootDir?: string;
   handoffPacketPath?: string;
