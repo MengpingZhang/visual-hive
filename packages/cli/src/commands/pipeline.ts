@@ -316,7 +316,7 @@ export async function runPipelineCommand(options: PipelineCommandOptions = {}): 
   });
   await runStep(context, "report", "Report", async () => {
     await runReportCommand({ config: options.config, cwd, format: "markdown", githubStepSummary: options.githubStepSummary });
-    return { artifacts: [catalogArtifact("latest-report"), catalogArtifact("mutation-report"), catalogArtifact("readiness-gate")] };
+    return { artifacts: [catalogArtifact("latest-report"), ".visual-hive/ux-scout-result.json", catalogArtifact("mutation-report"), catalogArtifact("readiness-gate")] };
   });
   await runStep(context, "artifacts", "Artifact Index", async () => {
     await runArtifactsCommand({ config: options.config, cwd });

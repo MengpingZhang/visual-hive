@@ -1052,6 +1052,7 @@ describe("schema catalog", () => {
     expect(schemaNames).toContain("visual-hive.evidence-packet.schema.json");
     expect(schemaNames).toContain("visual-hive.handoff.schema.json");
     expect(schemaNames).toContain("visual-hive.ux-scout-context.schema.json");
+    expect(schemaNames).toContain("visual-hive.ux-scout-result.schema.json");
     expect(schemaNames).toContain("visual-hive.agent-packet.schema.json");
     expect(schemaNames).toContain("visual-hive.tool-registry.schema.json");
     expect(schemaNames).toContain("visual-hive.mcp.schema.json");

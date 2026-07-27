@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visual-hive.dev/schemas/visual-hive.ux-scout-result.schema.json",
+  "title": "Visual Hive UX Scout Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "project",
+    "status",
+    "advisoryOnly",
+    "sourceContext",
+    "affectedFlows",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "visual-hive.ux-scout-result.v1" },
+    "generatedAt": { "type": "string" },
+    "project": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "skipped", "failed"] },
+    "advisoryOnly": { "const": true },
+    "sourceContext": { "const": ".visual-hive/ux-scout-context.json" },
+    "affectedFlows": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "flowId", "severity", "category", "title", "summary", "recommendation", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "flowId": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "category": { "enum": ["usability", "accessibility", "interaction", "recovery", "feedback"] },
+          "title": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "recommendation": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "error": { "type": "string" }
+  }
+}

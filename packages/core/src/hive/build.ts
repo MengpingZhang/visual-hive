@@ -867,7 +867,7 @@ function fallbackWorkItems(evidence: EvidencePacket): HandoffWorkItem[] {
 }
 
 function buildBeads(context: HiveSourceContext, workSources: HiveWorkSource[]): HiveBead[] {
-  return workSources.map(({ workItem, contributions }) => {
+  const beads: HiveBead[] = workSources.map(({ workItem, contributions }) => {
     const beadId = `vh-${stableHash(workItem.id).slice(0, 12)}`;
     const firstContribution = contributions[0];
     return {
@@ -896,6 +896,36 @@ function buildBeads(context: HiveSourceContext, workSources: HiveWorkSource[]): 
       depends_on: []
     };
   });
+  const uxContext = context.handoff?.uxScoutContext;
+  if (uxContext?.affectedFlows.length) {
+    const flowIds = uxContext.affectedFlows.map((flow) => flow.id);
+    const routes = dedupe(uxContext.affectedFlows.flatMap((flow) => flow.routes));
+    beads.push({
+      id: `vh-ux-${stableHash(`${context.evidence.project}:${flowIds.join(",")}`).slice(0, 12)}`,
+      title: `[UX] Review affected flow${flowIds.length === 1 ? "" : "s"}: ${flowIds.join(", ")}`,
+      type: "advisory",
+      status: "open",
+      priority: 2,
+      actor: "ux-scout",
+      external_ref: `visual-hive://ux-scout/${context.evidence.project}/${stableHash(flowIds.join(",")).slice(0, 12)}`,
+      metadata: compactRecord({
+        visual_hive_project: context.evidence.project,
+        visual_hive_verdict: context.evidence.verdictSummary.visualHiveVerdict,
+        visual_hive_source: "ux-scout-context",
+        visual_hive_agent: "ux-scout",
+        ux_scout_context: ".visual-hive/ux-scout-context.json",
+        ux_scout_flow_ids: flowIds.join(","),
+        ux_scout_routes: routes.join(","),
+        ux_scout_changed_files: uxContext.changedFiles.join(","),
+        visual_hive_mode: context.mode
+      }),
+      notes: renderUxScoutBeadNotes(uxContext),
+      created_at: context.generatedAt,
+      updated_at: context.generatedAt,
+      depends_on: []
+    });
+  }
+  return beads;
 }
 
 function buildKnowledgeFacts(context: HiveSourceContext, workSources: HiveWorkSource[], maxFacts: number): HiveKnowledgeFact[] {
@@ -1895,6 +1925,27 @@ function renderBeadNotes(workItem: HandoffWorkItem): string {
       "",
       "Suggested next steps:",
       ...workItem.suggestedNextSteps.map((step) => `- ${step}`)
+    ].join("\n")
+  );
+}
+
+function renderUxScoutBeadNotes(context: NonNullable<HandoffPacket["uxScoutContext"]>): string {
+  return sanitizeText(
+    [
+      "UX Scout review request from Visual Hive.",
+      "",
+      "Review only the affected flows below. This is Tier A code/text review; do not infer rendered evidence.",
+      "",
+      "Affected flows:",
+      ...context.affectedFlows.map((flow) =>
+        `- ${flow.id}: routes=${flow.routes.join(", ") || "n/a"}; selectors=${flow.selectors.join(", ") || "n/a"}; changed files=${flow.changedFiles.join(", ") || "n/a"}`
+      ),
+      "",
+      "Context artifact:",
+      "- .visual-hive/ux-scout-context.json",
+      "",
+      "Guardrails:",
+      ...context.guardrails.map((guardrail) => `- ${guardrail}`)
     ].join("\n")
   );
 }

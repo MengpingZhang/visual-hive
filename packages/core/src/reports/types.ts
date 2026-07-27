@@ -1,5 +1,6 @@
 import type { PlanMode } from "../planner/types.js";
 import type { EvidenceContribution, VerdictSummary } from "../evidence/types.js";
+import type { UxScoutResult } from "../ux/result.js";
 
 export type ContractStatus = "passed" | "failed" | "created" | "skipped";
 export type MutationStatus = "killed" | "survived" | "not_applicable" | "error";
@@ -195,6 +196,7 @@ export interface Report {
   reproductionCommands: string[];
   verdictSummary?: VerdictSummary;
   verdictContributions?: EvidenceContribution[];
+  uxScout?: UxScoutResult;
   noContractsReason?: string;
 }
 

@@ -60,7 +60,7 @@ export interface WriteIssuesOptions extends BuildIssuesOptions {
 export async function buildIssuesReport(options: BuildIssuesOptions): Promise<{ report: VisualHiveIssuesReport; markdown: string; queue: VisualHiveIssueQueue; setupIssue: VisualHiveSetupIssue }> {
   const rootDir = path.resolve(options.rootDir);
   const sourceArtifacts = defaultSourceArtifacts(options.sourcePaths);
-  const [report, mutationReport, triage, coverage, coverageRecommendations, repoMap, visualGraph, visualImpact, workflows, readiness, evidencePacket, handoff, hiveExport, knowledgeGraph, agentPacket, testCreationPlan, previousIssues, suppressions] =
+  const [report, mutationReport, triage, coverage, coverageRecommendations, repoMap, visualGraph, visualImpact, workflows, readiness, evidencePacket, handoff, uxScoutResult, hiveExport, knowledgeGraph, agentPacket, testCreationPlan, previousIssues, suppressions] =
     await Promise.all([
       readOptional<Report>(rootDir, sourceArtifacts.report),
       readOptional<MutationReport>(rootDir, sourceArtifacts.mutationReport),
@@ -74,6 +74,7 @@ export async function buildIssuesReport(options: BuildIssuesOptions): Promise<{ 
       readOptional<JsonObject>(rootDir, sourceArtifacts.readiness),
       readOptional<JsonObject>(rootDir, sourceArtifacts.evidencePacket),
       readOptional<JsonObject>(rootDir, sourceArtifacts.handoff),
+      readOptional<JsonObject>(rootDir, sourceArtifacts.uxScoutResult),
       readOptional<JsonObject>(rootDir, sourceArtifacts.hiveExport),
       readOptional<JsonObject>(rootDir, sourceArtifacts.knowledgeGraph),
       readOptional<JsonObject>(rootDir, sourceArtifacts.agentPacket),
@@ -161,6 +162,7 @@ export async function buildIssuesReport(options: BuildIssuesOptions): Promise<{ 
       readiness,
       evidencePacket,
       handoff,
+      uxScoutResult,
       hiveExport,
       knowledgeGraph,
       agentPacket,
@@ -762,6 +764,7 @@ function defaultSourceArtifacts(overrides?: Partial<VisualHiveIssuesReport["sour
     hiveExport: ".visual-hive/hive/hive-export.json",
     knowledgeGraph: ".visual-hive/hive/knowledge-graph.json",
     agentPacket: ".visual-hive/agent-packet.json",
+    uxScoutResult: ".visual-hive/ux-scout-result.json",
     ...overrides
   };
 }

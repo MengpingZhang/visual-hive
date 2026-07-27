@@ -408,6 +408,7 @@ function schemaPathFor(filePath: string, kind: ArtifactKind): string | undefined
     "schema-catalog.json": "visual-hive.schema-catalog.schema.json",
     "handoff.json": "visual-hive.handoff.schema.json",
     "ux-scout-context.json": "visual-hive.ux-scout-context.schema.json",
+    "ux-scout-result.json": "visual-hive.ux-scout-result.schema.json",
     "hive-bead-request.json": "visual-hive.hive-bead-request.schema.json",
     "hive-handoff-result.json": "visual-hive.hive-handoff-result.schema.json",
     "hive-handoff-validation.json": "visual-hive.handoff-validation.schema.json",

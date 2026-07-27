@@ -1,3 +1,4 @@
+import { access } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -59,6 +60,8 @@ export async function runHiveBundleCommand(options: HiveBundleCommandOptions = {
     path.join(path.dirname(importManifestPath), "hive-setup-pack.json"),
     path.join(path.dirname(importManifestPath), "hive-setup-pack.md")
   ];
+  const uxContextPath = path.join(".visual-hive", "ux-scout-context.json");
+  if (await access(path.resolve(rootDir, uxContextPath)).then(() => true).catch(() => false)) artifacts.push(uxContextPath);
   return writeVisualHiveBundle({
     rootDir,
     project: hiveExport.project,

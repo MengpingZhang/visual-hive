@@ -137,6 +137,9 @@
         "$ref": "#/$defs/evidenceContribution"
       }
     },
+    "uxScout": {
+      "$ref": "visual-hive.ux-scout-result.schema.json"
+    },
     "noContractsReason": {
       "type": "string"
     }

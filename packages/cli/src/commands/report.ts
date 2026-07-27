@@ -1,6 +1,6 @@
 import { appendFile } from "node:fs/promises";
 import path from "node:path";
-import { loadConfig, readJson, type MockProviderRunReport, type MutationReport, type ReadinessReport, type Report } from "@visual-hive/core";
+import { loadConfig, readJson, writeJson, type MockProviderRunReport, type MutationReport, type ReadinessReport, type Report, type UxScoutResult } from "@visual-hive/core";
 
 export interface ReportCommandOptions {
   config?: string;
@@ -16,10 +16,15 @@ export async function runReportCommand(options: ReportCommandOptions = {}): Prom
   const mutationReport = await readOptional<MutationReport>(path.join(loaded.rootDir, ".visual-hive", "mutation-report.json"));
   const readinessReport = await readOptional<ReadinessReport>(path.join(loaded.rootDir, ".visual-hive", "readiness.json"));
   const providerRunReport = await readOptional<MockProviderRunReport>(path.join(loaded.rootDir, ".visual-hive", "provider-results.json"));
+  const uxScoutResult = await readOptional<UxScoutResult>(path.join(loaded.rootDir, ".visual-hive", "ux-scout-result.json"));
+  const enrichedReport = report && uxScoutResult ? { ...report, uxScout: uxScoutResult } : report;
+  if (enrichedReport) {
+    await writeJson(path.join(loaded.rootDir, ".visual-hive", "report.json"), enrichedReport);
+  }
   const output =
     options.format === "json"
-      ? `${JSON.stringify({ report, mutationReport, readinessReport, providerRunReport }, null, 2)}\n`
-      : renderMarkdownReport(report, mutationReport, readinessReport, providerRunReport);
+      ? `${JSON.stringify({ report: enrichedReport, mutationReport, readinessReport, providerRunReport }, null, 2)}\n`
+      : renderMarkdownReport(enrichedReport, mutationReport, readinessReport, providerRunReport);
 
   if (options.githubStepSummary) {
     const summaryPath = process.env.GITHUB_STEP_SUMMARY;
@@ -61,6 +66,22 @@ export function renderMarkdownReport(
     `- Provider adapter run: ${providerRunReport ? `${providerRunReport.summary.providerCount} providers, ${providerRunReport.summary.failedProviders} failed, external calls ${providerRunReport.providers.reduce((count, provider) => count + provider.normalized.externalCallsMade, 0)}` : "not available"}`,
     ""
   ];
+
+  if (report?.uxScout) {
+    lines.push(
+      "### UX Scout Advisory",
+      "",
+      `- Status: ${report.uxScout.status}`,
+      `- Advisory only: ${report.uxScout.advisoryOnly}`,
+      `- Affected flows: ${report.uxScout.affectedFlows.join(", ") || "none"}`,
+      `- Findings: ${report.uxScout.findings.length}`,
+      ...report.uxScout.findings.map(
+        (finding) =>
+          `- [${finding.severity}] ${finding.category}: ${finding.title} — ${finding.recommendation}`
+      ),
+      ""
+    );
+  }
 
   if (failed.length > 0) {
     lines.push("### Failed Contracts", "");

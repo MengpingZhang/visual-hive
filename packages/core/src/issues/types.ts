@@ -89,6 +89,7 @@ export interface VisualHiveIssuesReport {
     readiness?: string;
     evidencePacket?: string;
     handoff?: string;
+    uxScoutResult?: string;
     hiveExport?: string;
     knowledgeGraph?: string;
     agentPacket?: string;

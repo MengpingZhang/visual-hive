@@ -12,6 +12,7 @@ import {
   buildHiveTrustedRepairWorkflowDryRun
 } from "../src/hive/build.js";
 import type { EvidencePacket } from "../src/evidence/types.js";
+import type { HandoffPacket } from "../src/handoff/types.js";
 import { VISUAL_HIVE_EVIDENCE_RESOURCES } from "../src/tools/evidenceResources.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -80,6 +81,58 @@ describe("Hive native export", () => {
     expect(result.bundle.wikiIndex.pages.length).toBe(result.wikiPages.length);
     expect(result.bundle.wikiIndex.pages[0]?.path).toMatch(/^\.visual-hive\/hive\/wiki\/.+\.md$/);
     expect(JSON.stringify(result.bundle)).not.toContain("secret-value");
+  });
+
+  it("emits one advisory UX Scout bead for selected affected flows", () => {
+    const result = buildHiveExportArtifacts({
+      evidencePacket: sampleEvidencePacket(),
+      evidencePacketPath: ".visual-hive/evidence-packet.json",
+      handoffPacketPath: ".visual-hive/handoff.json",
+      handoffPacket: {
+        ...({} as HandoffPacket),
+        workItems: [],
+        uxScoutContext: {
+          schemaVersion: "visual-hive.ux-scout-context.v1",
+          generatedAt: "2026-07-02T00:00:00.000Z",
+          project: "hive-export-fixture",
+          trigger: "affected-flow",
+          visualHiveVerdict: "failed",
+          changedFiles: ["src/App.tsx"],
+          affectedFlows: [
+            {
+              id: "api-error-state-contract",
+              contractId: "api-error-state-contract",
+              targetId: "localPreview",
+              severity: "high",
+              selected: true,
+              status: "failed",
+              routes: ["/scenarios?issue=api-500"],
+              selectors: ["[data-testid='error-banner']"],
+              changedFiles: ["src/App.tsx"],
+              failedSteps: [],
+              evidence: [".visual-hive/flows.json#api-error-state-contract"]
+            }
+          ],
+          sourceArtifacts: [".visual-hive/flows.json", ".visual-hive/hand-off.json"],
+          guardrails: ["Visual Hive remains the deterministic verdict authority."]
+        }
+      } as HandoffPacket,
+      hiveConfig: { enabled: false, mode: "measured" },
+      now: new Date("2026-07-02T00:00:00.000Z")
+    });
+
+    const uxBead = result.bundle.beads.find((bead) => bead.actor === "ux-scout");
+    expect(uxBead).toMatchObject({
+      type: "advisory",
+      status: "open",
+      metadata: {
+        visual_hive_agent: "ux-scout",
+        ux_scout_context: ".visual-hive/ux-scout-context.json",
+        ux_scout_flow_ids: "api-error-state-contract"
+      }
+    });
+    expect(uxBead?.notes).toContain("Tier A code/text review");
+    expect(result.bundle.governance.verdictAuthority).toBe("visual_hive");
   });
 
   it("creates guarded repair work orders with Visual Hive rerun acceptance criteria", () => {
